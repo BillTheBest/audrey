@@ -409,25 +409,23 @@ class TestConfigServerClient(unittest.TestCase):
 
         if self.cs_client_unittest:
             self.assertEqual(self.cs_client.ec2_user_data_url, \
-                'http://169.254.169.254/2009-04-04/user-data')
+                'http://169.254.169.254/latest/user-data')
             self.assertEqual(self.cs_client.cloud_type,  'UNITTEST')
-            self.assertEqual(self.cs_client.cs_addr, 'csAddr')
-            self.assertEqual(self.cs_client.cs_port, 'csPort')
-            self.assertEqual(self.cs_client.cs_UUID, 'csUUID')
-            self.assertEqual(self.cs_client.cs_pw, 'csPW')
-            self.assertEqual(self.cs_client.config_serv, \
-                'csAddr:csPort:csUUID:csPW')
+            self.assertEqual(self.cs_client.cs_endpoint, 'csAddr')
+            self.assertEqual(self.cs_client.cs_oauth_key, 'csOAuthKey')
+            self.assertEqual(self.cs_client.cs_oauth_secret, 'csOAuthSecret')
+            self.assertEqual(self.cs_client.user_data, \
+                'csAddr|csOAuthKey|csOAuthSecret')
         else:
             self.assertEqual(self.cs_client.ec2_user_data_url, \
                 'http://169.254.169.254/2009-04-04/user-data')
             self.assertEqual(self.cs_client.cloud_type,  'EC2')
 
             # For live nondeterministic data check for not blank.
-            self.assertNotEqual(self.cs_client.cs_addr, '')
-            self.assertNotEqual(self.cs_client.cs_port, '')
-            self.assertNotEqual(self.cs_client.cs_UUID, '')
-            self.assertNotEqual(self.cs_client.cs_pw, '')
-            self.assertNotEqual(self.cs_client.config_serv, '')
+            self.assertNotEqual(self.cs_client.cs_endpoint, '')
+            self.assertNotEqual(self.cs_client.cs_oauth_key, '')
+            self.assertNotEqual(self.cs_client.cs_oauth_secret, '')
+            self.assertNotEqual(self.cs_client.user_data, '')
 
     def test_success_get_cs_configs(self):
         '''
