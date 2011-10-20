@@ -19,6 +19,7 @@ set :version,             version
 set :proxy_type,          proxy_type
 set :proxy_auth_file,     proxy_auth_file
 set :app_file,            File.join(root_dir, 'hello.rb')
+ConfigServer::Model.storage_dir = settings.storage_dir
 disable :run
 
 if env == :development

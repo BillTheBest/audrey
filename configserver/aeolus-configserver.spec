@@ -18,8 +18,9 @@ Requires:	    ruby >= 1.8.1
 Requires:       ruby-nokogiri
 Requires:       rubygem(sinatra)
 Requires:       rubygem(thin)
-requires:       rubygem(archive-tar-minitar)
-requires:       rubygem(activesupport)
+Requires:       rubygem(archive-tar-minitar)
+Requires:       rubygem(activesupport)
+Requires:       rubygem(oauth)
 Requires(post): chkconfig
 Requires(preun): chkconfig
 Requires(preun): initscripts

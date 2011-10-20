@@ -20,6 +20,20 @@ error 400 do
   "Could not parse the given XML document.\n"
 end
 
+
+before '/configs/*' do
+  authenticate!
+end
+before '/params/*' do
+  authenticate!
+end
+before '/files/*' do
+  authenticate!
+end
+before '/version*' do
+  authenticate!
+end
+
 ## GET /version
 # Retrieve the Application and API version for this config server
 get '/version', :provides => ['text', 'xml'] do
