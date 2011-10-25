@@ -830,7 +830,7 @@ class CSClient(object):
             # Populate self.cloud_info_file with UNITTEST
             #
             self.cloud_type = 'UNITTEST'
-            self._parse_user_data('csAddr|csOAuthKey|csOAuthSecret')
+            self._parse_user_data('1|csAddr|csOAuthKey|csOAuthSecret')
             self.http = HttpUnitTest()
 
         else:
@@ -937,11 +937,24 @@ class CSClient(object):
 
     def _parse_user_data(self, data):
         '''
-        Take a string in form cs_endpoint|oauth_key|oauth_secret
-        and populate the respective self vars
+        Take a string in form version|cs_endpoint|oauth_key|oauth_secret
+        and populate the respective self vars.
+        Conductor puts the UUID into the oauth_key field.
+        At minimum this function expects to find a | in the string
+        this is in effort not to log oauth secrets.
         '''
         self.user_data = data
-        self.cs_endpoint, self.cs_oauth_key, self.cs_oauth_secret = data.split('|')
+        ud = data.split('|')
+        if len(ud) > 1:
+            if ud[0] == '1':
+                ud_version, self.cs_endpoint, \
+                self.cs_oauth_key, self.cs_oauth_secret = ud
+            #elif ud[0] == nextversion
+            #    parse code for version
+            else:
+                _raise_ASError('Invalid User Data Version: %s' % ud[0])
+        else:
+            _raise_ASError('Could not get user data version, parse failed')
 
     def _cs_url(self, url_type):
         return '%s/%s/%s/%s' % \

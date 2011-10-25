@@ -415,7 +415,7 @@ class TestConfigServerClient(unittest.TestCase):
             self.assertEqual(self.cs_client.cs_oauth_key, 'csOAuthKey')
             self.assertEqual(self.cs_client.cs_oauth_secret, 'csOAuthSecret')
             self.assertEqual(self.cs_client.user_data, \
-                'csAddr|csOAuthKey|csOAuthSecret')
+                '1|csAddr|csOAuthKey|csOAuthSecret')
         else:
             self.assertEqual(self.cs_client.ec2_user_data_url, \
                 'http://169.254.169.254/2009-04-04/user-data')
