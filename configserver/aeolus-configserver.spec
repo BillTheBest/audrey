@@ -2,7 +2,7 @@
 
 Name:		aeolus-configserver
 Version:	@VERSION@
-Release:	5%{?extra_release}%{?dist}
+Release:	1%{?extra_release}%{?dist}
 Summary:	The Aeolus Config Server
 BuildArch:  noarch
 
@@ -131,6 +131,8 @@ fi
 
 
 %changelog
+* Wed Oct 26 2011 Greg Blomquist <gblomqui@redhat.com> 0.3.0-1
+- Now using oauth for authentication
 * Tue Oct 25 2011 Greg Blomquist <gblomqui@redhat.com> 0.2.3-5
 - Explicitly require mod_ssl for proxy package
 * Wed Oct 05 2011 Greg Blomquist <gblomqui@redhat.com> 0.2.3-4
