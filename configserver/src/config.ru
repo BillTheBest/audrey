@@ -24,6 +24,7 @@ disable :run
 
 if env == :development
   require 'ruby-debug'
-  LOGGER = Logger.new(ENV['APPLICATION_LOG'])
 end
+
+LOGGER = Logger.new(ENV['APPLICATION_LOG'])
 run Sinatra::Application
