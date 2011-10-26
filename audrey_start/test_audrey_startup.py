@@ -527,6 +527,6 @@ class TestAudreyScript(unittest.TestCase):
 
 if __name__ == '__main__':
 
-    setup_logging()
+    setup_logging(logging.DEBUG, logfile_name='./test_audrey_startup.log')
     unittest.main()
 
