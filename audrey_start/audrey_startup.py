@@ -241,10 +241,6 @@ class Service_Params(object):
             name = ''
         self.name = name # string
         self.params = [] # start with an empty list
-    def set_name(self, name):
-        if name == None:
-            name = ''
-        self.name = name
     def add_param(self, param):
         self.params.append(param)
     def __repr__(self):
@@ -518,51 +514,6 @@ def generate_provides(src):
 
     return urllib.urlencode({'audrey_data':'|'.join(provides_list)})
 
-#
-# Methods used to access any user provided configuration tooling.
-#
-
-#
-# Classes and methods to perform the get and put to and from
-# the Config Server (CS)
-#
-class HttpUnitTest(object):
-    '''
-    Description:
-        When testing the http object does not exists. This class provides
-        test methods that could be preformed when doing UNITTESTing.
-    '''
-    class HttpUnitTestResponse(object):
-        '''
-        Description:
-            When testing the http object does not exists. This class
-            provides the test method response that could be preformed
-            when doing UNITTESTing.
-        '''
-        def __init__(self, status):
-            self.status = status
-        def status(self):
-            '''
-            return status when not running live but in test environment.
-            '''
-            return self.status
-
-    # simple HTTP Response with 200 status code
-    ok_response = HttpUnitTestResponse(200)
-
-    def request(self, url, method='GET', body=None, headers=None):
-        '''
-        Handle request when not running live but in test environment.
-        '''
-        if method == 'GET' and url.find('/configs/') > -1:
-            body = '|service|s1|parameters|param1&%s|param2&%s' % \
-                    (base64.b64encode('value1'), base64.b64encode('value2'))
-        elif (method == 'GET') and (url.find('/params/') > -1):
-            body = '|param1&param2|'
-        elif method == 'PUT' and url.find('/params/') > -1:
-            body = ''
-        return HttpUnitTest.ok_response, body
-
 class Config_Tooling(object):
     '''
     TBD - Consider making this class derived from dictionary or a mutable
@@ -580,7 +531,7 @@ class Config_Tooling(object):
           Hat supplied.
     '''
 
-    def __init__(self, unittest=False, tool_dir=TOOLING_DIR):
+    def __init__(self, tool_dir=TOOLING_DIR):
         '''
         Description:
             Set initial state so it can be tracked. Valuable for
@@ -804,8 +755,7 @@ class CSClient(object):
         Client interface to Config Server (CS)
     '''
 
-    def __init__(self, endpoint, oauth_key, oauth_secret,
-                    unittest=False, **kwargs):
+    def __init__(self, endpoint, oauth_key, oauth_secret, **kwargs):
         '''
         Description:
             Set initial state so it can be tracked. Valuable for
@@ -813,36 +763,21 @@ class CSClient(object):
         '''
 
         self.version = CS_API_VER
-        self.cloud_type = 'UNKNOWN'
         self.cs_endpoint = endpoint
         self.cs_oauth_key = oauth_key
         self.cs_oauth_secret = oauth_secret
+        self.ec2_user_data_url = 'http://169.254.169.254/latest/user-data'
         self.cs_params = ''
         self.cs_configs = ''
         self.tmpdir = ''
         self.tarball = ''
-        self.http = httplib2.Http()
 
-        # If not running unit testing (python -m unittest) then
-        # Discover the Config Server access info which could have
-        # been passed on command line. If not then discover it
-        # using the cloud provider specific method.
-        if unittest:
-            #
-            # For testing from UNITTEST
-            # Populate self.cloud_info_file with UNITTEST
-            #
-            self.cloud_type = 'UNITTEST'
-            self._parse_user_data('1|csAddr|csOAuthKey|csOAuthSecret')
-            self.http = HttpUnitTest()
-
-        else:
-            # Switch to oauth now that we've gathered user_data
-            consumer = oauth.Consumer(self.cs_oauth_key, self.cs_oauth_secret)
-            # 2 legged auth, token unnessesary
-            token = None #oauth.Token('access-key-here','access-key-secret-here')
-            client = oauth.Client(consumer, token)
-            self.http = client
+        # create an oauth client for communication with the cs
+        consumer = oauth.Consumer(self.cs_oauth_key, self.cs_oauth_secret)
+        # 2 legged auth, token unnessesary
+        token = None #oauth.Token('access-key-here','access-key-secret-here')
+        client = oauth.Client(consumer, token)
+        self.http = client
 
     def __del__(self):
         '''
@@ -863,7 +798,6 @@ class CSClient(object):
         '''
         return('\n<Instance of: %s\n' \
                '\tVersion: %s\n' \
-               '\tCloud Type: %s\n' \
                '\tConfig Server Endpoint: %s\n' \
                '\tConfig Server oAuth Key: %s\n' \
                '\tConfig Server oAuth Secret: %s\n' \
@@ -874,7 +808,6 @@ class CSClient(object):
                'eot>' %
             (self.__class__.__name__,
             str(self.version),
-            str(self.cloud_type),
             str(self.cs_endpoint),
             str(self.cs_oauth_key),
             str(self.cs_oauth_secret),
@@ -993,7 +926,11 @@ class CSClient(object):
 
         return response.status, self.tarball
 
-def discover_config_server():
+def discover_config_server(cloud_info_file=CLOUD_INFO_FILE,
+                           condor_addr_file=CONDORCLOUD_CS_ADDR,
+                           condor_uuid_file=CONDORCLOUD_CS_UUID,
+                           ec2_user_data=EC2_USER_DATA_URL,
+                           http=httplib2.Http()):
     '''
     Description:
         Discover the Config Server access info.
@@ -1006,7 +943,7 @@ def discover_config_server():
     # e.g.: CLOUD_TYPE="EC2"
     #
 
-    def _parse_user_data(self, data):
+    def _parse_user_data(data, condor=None):
         '''
         Take a string in form version|cs_endpoint|oauth_key|oauth_secret
         and populate the respective self vars.
@@ -1015,24 +952,32 @@ def discover_config_server():
         this is in effort not to log oauth secrets.
         '''
         LOGGER.debug('Parsing User Data')
-        ud = data.split('|')
-        if len(ud) > 1:
-            if ud[0] == '1':
-                ud_version, self.cs_endpoint, \
-                self.cs_oauth_key, self.cs_oauth_secret = ud
+        user_data = data.split('|')
+        if len(user_data) > 1:
+            if user_data[0] == '1':
+                if condor:
+                    ud_version, endpoint, \
+                        oauth_secret = user_data
+                    oauth_key = condor
+                else:
+                    ud_version, endpoint, \
+                        oauth_key, oauth_secret = user_data
+                return {'endpoint': endpoint,
+                        'oauth_key': oauth_key,
+                        'oauth_secret': oauth_secret,}
             #elif ud[0] == nextversion
             #    parse code for version
             else:
-                _raise_ASError('Invalid User Data Version: %s' % ud[0])
+                _raise_ASError('Invalid User Data Version: %s' % user_data[0])
         else:
             _raise_ASError('Could not get user data version, parse failed')
 
     try:
-        with open(CLOUD_INFO_FILE, 'r') as fp:
+        with open(cloud_info_file, 'r') as fp:
             read_data = fp.read()
     except IOError:
         _raise_ASError(('Failed accessing file %s') % \
-            (CLOUD_INFO_FILE))
+            (cloud_info_file))
 
     #
     # Discover the Config Server access info.
@@ -1048,17 +993,18 @@ def discover_config_server():
             max_attempts = 5
             headers = {'Accept': 'text/plain'}
             for attempt in range(1, max_attempts):
-                response, body = self._get(EC2_USER_DATA_URL, headers=headers)
+                response, body = http.request(ec2_user_data,
+                                              headers=headers)
                 if response.status == 200:
                     break
             if response.status != 200:
                 _raise_ASError('Max attempts to get EC2 user data \
                         exceeded.')
 
-            self._parse_user_data(base64.b64decode(body))
+            return _parse_user_data(base64.b64decode(body))
 
-        except:
-            _raise_ASError('Failed accessing EC2 user data.')
+        except Exception, e:
+            _raise_ASError('Failed accessing EC2 user data: %s' % e)
 
     elif 'CONDORCLOUD' in cloud_type:
         #
@@ -1066,12 +1012,10 @@ def discover_config_server():
         # Uses the dmi files to access the stored smbios information.
         #
         try:
-            end, pwd = open(CONDORCLOUD_CS_ADDR, 'r').read()[:-1].split('|')
-            user = open(CONDORCLOUD_CS_UUID, 'r').read()[:-1]
-            self._parse_user_data('|'.join(end, user, pwd))
-
-        except:
-            _raise_ASError('Failed accessing Config Server data.')
+            return _parse_user_data(open(condor_addr_file, 'r').read().strip(),
+                                    open(condor_uuid_file, 'r').read().strip())
+        except Exception, e:
+            _raise_ASError('Failed accessing Config Server data: %s' % e)
 
     elif 'RHEV' in cloud_type:
         #
@@ -1122,7 +1066,7 @@ def discover_config_server():
                 line = fp.read()[:-1]
                 if '|' not in line:
                     line = base64.b64decode(line)
-                self._parse_user_data(line)
+                return _parse_user_data(line)
         except:
             _raise_ASError('Failed accessing RHEVm user data.')
 
@@ -1167,7 +1111,7 @@ def discover_config_server():
                 line = fp.read()[:-1]
                 if '|' not in line:
                     line = base64.b64decode(line)
-                self._parse_user_data(line)
+                return _parse_user_data(line)
         except:
             _raise_ASError('Failed accessing vSphere user data.')
 
@@ -1200,8 +1144,7 @@ def parse_args():
         line all of it must be provided.
 
     Return:
-        True - if all Config Server info was provided on command line
-        False - otherwise
+        dict - of parser keys and values
     '''
     parser = argparse.ArgumentParser(description='Audrey Start')
     parser.add_argument('-e', '--endpoint', dest='endpoint', \
@@ -1210,7 +1153,7 @@ def parse_args():
         required=False, help='oAuth Key')
     parser.add_argument('-s', '--secret', dest='oauth_secret', \
         required=False, help='oAuth Secret')
-    parser.add_argument('-p', '--pwd', \
+    parser.add_argument('-p', '--pwd', action="store_true", default=False, \
         required=False, help='Log and look for configs in pwd',)
     parser.add_argument('-L', '--log_level', dest='log_level', \
         required=False, default='INFO', help='Audrey Agent Logging Level',
@@ -1220,7 +1163,7 @@ def parse_args():
 
     return args
 
-def audrey_script_main():
+def audrey_script_main(client_http=None):
     '''
     Description:
         This script will be used on EC2 for configuring the running
@@ -1233,16 +1176,30 @@ def audrey_script_main():
         404 HTTP Not Found - This may be temporary so try again
     '''
     # parse the args and setup logging
-    args = parse_args()
-    if 'pwd' in args and args.pwd:
-        setup_logging(level=args.log_level,
-            logfile_name='./audrey.log')
+    conf = parse_args()
+    if 'pwd' in conf and conf.pwd:
+        log_file='audrey.log'
+        tool_dir='tooling'
+        cloud_info='cloud_info'
     else:
-        setup_logging(level=args.log_level)
+        log_file=os.path.join(LOG, 'audrey.log')
+        tool_dir=TOOLING_DIR
+        cloud_info=CLOUD_INFO_FILE
 
-    if not args.endpoint:
-        # discover the cloud I'm on
-        args = discover_config_server()
+    setup_logging(level=conf.log_level,
+            logfile_name=log_file)
+
+    if not conf.endpoint:
+        if client_http:
+            conf = discover_config_server(cloud_info_file=cloud_info,
+                                          http=client_http)
+        else:
+            # discover the cloud I'm on
+            conf = discover_config_server(cloud_info_file=cloud_info)
+
+    # ensure the conf it a dictionary, not a namespace
+    if hasattr(conf, '__dict__'):
+       conf = vars(conf)
 
     LOGGER.info('Invoked audrey_script_main')
 
@@ -1252,15 +1209,15 @@ def audrey_script_main():
     max_retry = 5
     services = []
 
-    import pdb
-    pdb.set_trace()
     # Create the Client Object
-    cs_client = CSClient(**vars(args))
+    cs_client = CSClient(**conf)
+    if client_http:
+        cs_client.http = client_http
     LOGGER.info(str(cs_client))
 
     LOGGER.debug('Get optional tooling from the Config Server')
     # Get any optional tooling from the Config Server
-    tooling = Config_Tooling()
+    tooling = Config_Tooling(tool_dir=tool_dir)
     tooling_status, tarball = cs_client.get_cs_tooling()
     if (tooling_status == 200) or (tooling_status == 202):
         tooling.unpack_tooling(tarball)
