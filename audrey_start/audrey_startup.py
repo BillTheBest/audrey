@@ -1182,7 +1182,7 @@ def audrey_script_main(client_http=None):
         tool_dir='tooling'
         cloud_info='cloud_info'
     else:
-        log_file=os.path.join(LOG, 'audrey.log')
+        log_file=LOG
         tool_dir=TOOLING_DIR
         cloud_info=CLOUD_INFO_FILE
 
