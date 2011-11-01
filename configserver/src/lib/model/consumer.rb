@@ -12,7 +12,7 @@ module ConfigServer
 
       def self.create(key, secret)
         consumer = Consumer.new(key)
-        consumer.store(key)
+        consumer.store(secret)
       end
 
       attr_reader :key, :secret
@@ -22,8 +22,8 @@ module ConfigServer
         @secret = nil
       end
 
-      def store(key)
-        File.open(path, "w", :mode => 0600) {|f| f.write(secret)}
+      def store(secret)
+        File.open(path, "w", 0600) {|f| f.write(secret)}
         self
       end
 

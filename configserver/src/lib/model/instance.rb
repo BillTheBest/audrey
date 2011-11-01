@@ -338,7 +338,7 @@ module ConfigServer
 
         replace_tarball
 
-        @secret = get_crypted_secret
+        @secret = get_secret
 
         deployable
         @deployable.add_instance(@uuid)
