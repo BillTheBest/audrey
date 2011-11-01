@@ -2,7 +2,7 @@
 
 Name:		aeolus-audrey_startup
 Version:	@VERSION@
-Release:	1%{?dist}%{?extra_release}
+Release:	2%{?dist}%{?extra_release}
 
 Summary:	The Aeolus Audrey Startup Script
 BuildArch:	noarch
@@ -45,6 +45,8 @@ rm -rf $RPM_BUILD_ROOT
 %{app_root}/audrey
 
 %changelog
+* Thu Oct 27 2011 Greg Blomquist <gblomqui@redhat.com> 0.4.0-2
+- Radez doubled unit test coverage
 * Wed Oct 26 2011 Greg Blomquist <gblomqui@redhat.com> 0.4.0-1
 - Now using oauth to authenticate with Config Server
 - Parsing a new user data format that is versioned

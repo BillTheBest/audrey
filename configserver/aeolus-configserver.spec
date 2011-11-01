@@ -2,7 +2,7 @@
 
 Name:		aeolus-configserver
 Version:	@VERSION@
-Release:	2%{?extra_release}%{?dist}
+Release:	3%{?extra_release}%{?dist}
 Summary:	The Aeolus Config Server
 BuildArch:  noarch
 
@@ -131,6 +131,8 @@ fi
 
 
 %changelog
+* Tue Nov 01 2011 Greg Blomquist <gblomqui@redhat.com> 0.3.0-3
+- Few small fixes for OAuth signature validation
 * Wed Oct 26 2011 Greg Blomquist <gblomqui@redhat.com> 0.3.0-2
 - Now using oauth for authentication
 - Fix logging for production deployment
