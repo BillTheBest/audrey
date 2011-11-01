@@ -13,6 +13,10 @@ configure :development do
   set :raise_errors, true
 end
 
+configure :production do
+  enable :logging
+end
+
 error 400 do
   #FIXME: point the requestor to the relaxNG document used to parse the XML
   # document.
