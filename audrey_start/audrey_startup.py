@@ -829,12 +829,12 @@ class CSClient(object):
         '''
         return self.http.request(url, method='GET', headers=headers)
 
-    def _post(self, url, body=None, headers=None):
+    def _put(self, url, body=None, headers=None):
         '''
         Description:
             Issue the http put to the the Config Server.
         '''
-        return self.http.request(url, method='POST',
+        return self.http.request(url, method='PUT',
                             body=body, headers=headers)
 
     def _validate_http_status(self, status):
@@ -889,7 +889,7 @@ class CSClient(object):
         url = self._cs_url('params')
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
 
-        response, body = self._post(url, body=params_values, headers=headers)
+        response, body = self._put(url, body=params_values, headers=headers)
         return response.status, body
 
     def get_cs_tooling(self):
@@ -1001,7 +1001,9 @@ def discover_config_server(cloud_info_file=CLOUD_INFO_FILE,
                 _raise_ASError('Max attempts to get EC2 user data \
                         exceeded.')
 
-            return _parse_user_data(base64.b64decode(body))
+            if '|' not in body:
+                body = base64.b64decode(body)
+            return _parse_user_data(body)
 
         except Exception, e:
             _raise_ASError('Failed accessing EC2 user data: %s' % e)
