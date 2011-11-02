@@ -2,7 +2,7 @@
 
 Name:		aeolus-audrey_startup
 Version:	@VERSION@
-Release:	3%{?dist}%{?extra_release}
+Release:	4%{?dist}%{?extra_release}
 
 Summary:	The Aeolus Audrey Startup Script
 BuildArch:	noarch
@@ -45,6 +45,8 @@ rm -rf $RPM_BUILD_ROOT
 %{app_root}/audrey
 
 %changelog
+* Wed Nov 02 2011 Greg Blomquist <gblomqui@redhat.com> 0.4.0-4
+- Handles base64 encoded and decoded data in user data
 * Wed Nov 02 2011 Greg Blomquist <gblomqui@redhat.com> 0.4.0-3
 - Fix for audrey.log location
 * Thu Oct 27 2011 Greg Blomquist <gblomqui@redhat.com> 0.4.0-2
