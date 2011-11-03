@@ -2,7 +2,7 @@
 
 Name:		aeolus-configserver
 Version:	@VERSION@
-Release:	3%{?extra_release}%{?dist}
+Release:	1%{?extra_release}%{?dist}
 Summary:	The Aeolus Config Server
 BuildArch:  noarch
 
@@ -131,6 +131,8 @@ fi
 
 
 %changelog
+* Thu Nov 03 2011 Greg Blomquist <gblomqui@redhat.com> 0.4.0-1
+- Version bump to start being consistent with Audrey Client
 * Tue Nov 01 2011 Greg Blomquist <gblomqui@redhat.com> 0.3.0-3
 - Few small fixes for OAuth signature validation
 * Wed Oct 26 2011 Greg Blomquist <gblomqui@redhat.com> 0.3.0-2
