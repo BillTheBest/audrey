@@ -414,9 +414,11 @@ module ConfigServer
         # mk a tmpdir
         Dir.mktmpdir do |dir|
           # download all the executable files
-          download_files(dir, :type => :executable)
+          get_configuration_scripts(dir, :type => :executable)
+          #download_files(dir, :type => :executable)
           # download all the general files
-          download_files(dir, :type => :file)
+          get_configuration_scripts(dir, :type => :file)
+          #download_files(dir, :type => :file)
 
           # tar the contents of the tmpdir
           Dir.pushd(dir) do
@@ -429,6 +431,63 @@ module ConfigServer
         end
       end
 
+      def get_configuration_scripts(dir, opts={})
+        opts[:type] =|| :executable
+        if not [:executable, :file].include? type
+          raise RuntimeError, "unknown configuration file type #{type.to_s}"
+        end
+        (config / type.to_s).each do |node|
+          storage_dir = dir
+          parent = (:file == type) ? node.parent.parent : node.parent
+          if "service" == parent.name
+            svc_name = parent['name']
+            storage_dir = "#{dir}/#{svc_name}"
+            Dir.mkdir storage_dir if not File.exists? storage_dir
+          end
+          # if file is URL, download file
+          # else read file from cdata contents
+          begin
+            file_data = get_configuration_file(node)
+            write_configuration_file(file_data)
+          rescue => e
+            puts "ERROR: could not get configuration file contents"
+            puts e
+          end
+
+        end
+      end
+
+      def get_configuration_file(node)
+        file_data = {}
+        if not node['url']
+          file_content_node = node.first_element_child
+          if file_content_node.nil?
+            raise "No 'contents' element found for configuration file without url: #{node.name}"
+          end
+          file_data[:name] = file_content_node[:filename]
+          file_data[:body] = file_content_node.content
+        else
+          file_data = download_file(node['url'])
+          if file_data[:code] != "200"
+            raise "Could not download file #{node['url']}.  Http Response code: #{file_data[:code]}"
+          end
+        end
+        file_data
+      end
+
+      def write_configuration_file(file_data)
+        filename = (:file == type) ? file_data[:name] : "start"
+        if type == :executable
+          open("#{storage_dir}/#{filename}", "wb", 0777) do |file|
+            file << file_data[:body]
+          end
+        else
+          open("#{storage_dir}/#{filename}", "wb") do |file|
+            file << file_data[:body]
+          end
+        end
+      end
+=begin
       def download_files(dir, opts={})
         type = opts[:type] || :executable
         if not [:executable, :file].include? type
@@ -462,6 +521,7 @@ module ConfigServer
           end
         end
       end
+=end
 
       def download_file(url)
         result = {}
