@@ -34,8 +34,13 @@ end
 before '/files/*' do
   authenticate!
 end
-before '/version*' do
+before '/auth*' do
   authenticate!
+end
+
+get '/auth' do
+  logger.debug("Client is testing auth credentials")
+  "Authentication test successful"
 end
 
 ## GET /version
