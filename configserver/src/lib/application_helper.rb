@@ -42,7 +42,7 @@ module ApplicationHelper
   end
 
   def authenticated?
-    OAuth::Signature.verify(request, :unsigned_parameters => ["data", "audrey-data"]) do |request_proxy|
+    OAuth::Signature.verify(request, :unsigned_parameters => ["data", "audrey_data"]) do |request_proxy|
       logger.debug("**AUTHENTICATING** key = #{request_proxy.consumer_key}")
       consumer = ConfigServer::Model::Consumer.find(request_proxy.consumer_key)
       if not consumer.nil?
