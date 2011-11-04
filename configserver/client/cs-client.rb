@@ -3,7 +3,7 @@ require 'oauth'
 require 'nokogiri'
 require 'optparse'
 require 'ruby-debug'
-  
+
 @API_VERSION = "1"
 @options = {}
 OptionParser.new do |opts|
@@ -61,14 +61,13 @@ def client_setup_and_test(key, secret)
   # return the token and the auth test code
   [token, auth_test.code]
 end
- 
+
 def post(client, xml_body, uuid)
   data = CGI::escape(xml_body)
 #  args[:payload] = "data=#{data}"
   puts "#{@options[:endpoint]}/configs/#{@API_VERSION}/#{uuid}"
-  post = client.request(:post, "#{@options[:endpoint]}/configs/#{@API_VERSION}/#{uuid}/", 
-                  { :uuid => uuid,
-                    :payload => "data=#{data}" })
+  post = client.request(:post, "#{@options[:endpoint]}/configs/#{@API_VERSION}/#{uuid}/",
+                  { :payload => "data=#{data}" })
   puts post.code
   puts post.body
 end
